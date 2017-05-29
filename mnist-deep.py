@@ -72,7 +72,7 @@ accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32), name='accurac
 # Training algorithm
 train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
 
-with tf.Session() as sess:
+with tf.Session(config=tf.ConfigProto(log_device_placement=True)) as sess:
   sess.run(tf.initialize_all_variables())
 
   max_steps = 10
