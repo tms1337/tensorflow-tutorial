@@ -78,7 +78,7 @@ with tf.Session() as sess:
 
   max_steps = 10000
   for step in range(max_steps):
-    batch_xs, batch_ys = mnist.train.next_batch(1)
+    batch_xs, batch_ys = mnist.train.next_batch(50)
     if (step % 100) == 0:
       print(step, sess.run(accuracy, feed_dict={x: mnist.test.images, y_: mnist.test.labels, keep_prob: 1.0}))
     sess.run(train_step, feed_dict={x: batch_xs, y_: batch_ys, keep_prob: 0.5})
