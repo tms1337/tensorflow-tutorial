@@ -76,7 +76,7 @@ with tf.device('/gpu:0'):
 with tf.Session() as sess:
   sess.run(tf.initialize_all_variables())
 
-  max_steps = 10000
+  max_steps = 20000
   for step in range(max_steps):
     batch_xs, batch_ys = mnist.train.next_batch(50)
     if (step % 100) == 0:
