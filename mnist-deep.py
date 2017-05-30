@@ -73,10 +73,10 @@ with tf.device('/gpu:0'):
     # Training algorithm
     train_step = tf.train.AdamOptimizer(1e-4).minimize(cross_entropy)
 
-with tf.Session(config=tf.ConfigProto(log_device_placement=True)) as sess:
+with tf.Session() as sess:
   sess.run(tf.initialize_all_variables())
 
-  max_steps = 10
+  max_steps = 2000
   for step in range(max_steps):
     batch_xs, batch_ys = mnist.train.next_batch(1)
     if (step % 100) == 0:
