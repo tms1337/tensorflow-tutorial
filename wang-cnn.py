@@ -18,7 +18,7 @@ is_local = False
 if is_local:
     train_perc = 0.1
 else:
-    train_perc = 0.5
+    train_perc = 0.9
 
 if is_local:
     root_url = "/home/faruk/Desktop/wang1000"
@@ -77,12 +77,12 @@ x_test = x_test.reshape((test_n, 384 * 256 * 3))
 if is_local:
     batch_size = 40
 else:
-    batch_size = 100
+    batch_size = 200
 
 if is_local:
     epochs = 2
 else:
-    epochs = 20
+    epochs = 100
 
 model.fit(x_train, x_train,
           batch_size=batch_size,
