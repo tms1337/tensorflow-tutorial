@@ -19,7 +19,7 @@ model_file.close()
 model = model_from_json(model_json)
 model.load_weights("/home/faruk/Desktop/output/full.h5")
 
-img = Image.open(open("/home/faruk/Desktop/wang1000/1/10.jpg", "rb"))
+img = Image.open(open("/home/faruk/Desktop/wang1000/1/132.jpg", "rb"))
 img = np.asarray(img, dtype='float64') / 256.
 
 plt.imshow(img)
