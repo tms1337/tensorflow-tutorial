@@ -1,4 +1,4 @@
-is_local = True
+is_local = False
 
 if is_local:
     config = {
