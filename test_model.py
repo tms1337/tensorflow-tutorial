@@ -11,23 +11,29 @@ from PIL import Image
 import os
 import random
 import matplotlib.pyplot as plt
+from keras.datasets import cifar100
 
-model_url = "/home/faruk/Desktop/output/full.json"
+file_name = "autoencoder"
+
+model_url = "/home/faruk/Desktop/output/%s.json" % file_name
 model_file = open(model_url, "r")
 model_json = model_file.read()
 model_file.close()
 model = model_from_json(model_json)
-model.load_weights("/home/faruk/Desktop/output/full.h5")
+model.load_weights("/home/faruk/Desktop/output/%s.h5" % file_name)
 
-img = Image.open(open("/home/faruk/Desktop/wang1000/1/132.jpg", "rb"))
-img = np.asarray(img, dtype='float64') / 256.
+(x_train, _), (x_test, _) = cifar100.load_data(label_mode='fine')
 
-plt.imshow(img)
-plt.show()
+for i in range(10, 20):
+    img = x_train[i]
 
-img_input = img.reshape((1, 384*256*3))
-decoded_img_tensor = 256.0 * model.predict(img_input)
+    plt.imshow(img)
+    plt.show()
 
-decoded_img = decoded_img_tensor.reshape( (384, 256, 3) )
-plt.imshow(decoded_img)
-plt.show()
+    prediction = model.predict(x_train[i:i + 1])
+    print(prediction.shape)
+    print(prediction)
+    img = prediction[0]
+
+    plt.imshow(img)
+    plt.show()

@@ -10,7 +10,8 @@ if is_local:
             "batch_size": 2,
             "epoch_n": 5,
             "data_n": 10,
-            "repeat-n": 1
+            "repeat-n": 1,
+            "steps_per_epoch": 1,
         }
     }
 else:
@@ -18,9 +19,10 @@ else:
         "output_dir": "/output",
         "data_root_dir": "/input",
         "inception-top": {
-            "batch_size": 500,
-            "epoch_n": 10,
+            "batch_size": 300,
+            "epoch_n": 500,
             "data_n": 5000,
-            "repeat-n": 1
+            "repeat-n": 1,
+            "steps_per_epoch": 1,
         }
     }
