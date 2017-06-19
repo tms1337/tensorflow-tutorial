@@ -24,7 +24,7 @@ model.load_weights("/home/faruk/Desktop/output/%s.h5" % file_name)
 
 (x_train, _), (x_test, _) = cifar100.load_data(label_mode='fine')
 
-for i in range(10, 20):
+for i in range(0, 100):
     img = x_train[i]
 
     plt.imshow(img)

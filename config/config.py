@@ -20,9 +20,9 @@ else:
         "data_root_dir": "/input",
         "inception-top": {
             "batch_size": 300,
-            "epoch_n": 500,
+            "epoch_n": 200,
             "data_n": 5000,
             "repeat-n": 1,
-            "steps_per_epoch": 1,
+            "steps_per_epoch": 250,
         }
     }

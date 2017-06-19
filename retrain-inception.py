@@ -17,77 +17,55 @@ import sys
 
 # batch_size = 1
 train_datagen = ImageDataGenerator(rescale=1.0 / 255,
-                                   rotation_range=45,
-                                   width_shift_range=0.2,
-                                   height_shift_range=0.2,
-                                   zoom_range=0.5,
-                                   fill_mode="nearest",
-                                   horizontal_flip=True,
-                                   shear_range=0.2)
-#                                    )
+                                   # width_shift_range=0.2,
+                                   # height_shift_range=0.2,
+                                   # zoom_range=0.5,
+                                   # fill_mode="nearest",
+                                   # horizontal_flip=True,
+                                   # shear_range=0.2)
+                                   )
 # data_path = "%s/%s" % (config["data_root_dir"], "wang999")
 # data_generator = train_datagen.flow_from_directory(data_path,
 #                                                    target_size=(width, height),
 #                                                    batch_size=batch_size,
 #                                                    shuffle=True)
 
-
-
 (x_train, _), (x_test, _) = cifar100.load_data(label_mode='fine')
-x_train = x_train.astype("float32") * (1.0/255)
-x_test = x_test.astype("float32") * (1.0/255)
-
+x_train = x_train.astype("float32") * (1.0 / 255)
+x_test = x_test.astype("float32") * (1.0 / 255)
 
 code_length = 128
 
 autoencoder = Sequential()
 
-autoencoder.add(Conv2D(128, (8, 8), activation="relu", padding="same", input_shape=x_train.shape[1:]))
-autoencoder.add(MaxPooling2D((2, 2)))
-
-autoencoder.add(Conv2D(64, (8, 8), activation="relu", padding="same"))
-autoencoder.add(MaxPooling2D((2, 2)))
-
-autoencoder.add(Conv2D(32, (4, 4), activation="relu", padding="same"))
-autoencoder.add(Conv2D(32, (2, 2), activation="relu", padding="same"))
-autoencoder.add(MaxPooling2D((2, 2)))
-
-autoencoder.add(Conv2D(16, (2, 2), activation="relu", padding="same"))
+autoencoder.add(Conv2D(64, (2, 2), activation="relu", padding="same", input_shape=x_train.shape[1:]))
 autoencoder.add(MaxPooling2D((2, 2)))
 
 autoencoder.add(Dropout(0.5))
 
 autoencoder.add(UpSampling2D((2, 2)))
-autoencoder.add(Conv2D(16, (2, 2), activation="relu", padding="same"))
+autoencoder.add(Conv2D(64, (2, 2), activation="relu", padding="same"))
 
-autoencoder.add(UpSampling2D((2, 2)))
-autoencoder.add(Conv2D(32, (4, 4), activation="relu", padding="same"))
-autoencoder.add(Conv2D(32, (4, 4), activation="relu", padding="same"))
+autoencoder.add(Conv2D(3, (32, 32), activation="softmax", padding="same"))
 
-autoencoder.add(UpSampling2D((2, 2)))
-autoencoder.add(Conv2D(64, (4, 4), activation="relu", padding="same"))
-
-autoencoder.add(UpSampling2D((2, 2)))
-autoencoder.add(Conv2D(128, (8, 8), activation="relu", padding="same"))
-autoencoder.add(Conv2D(3, (4, 4), activation="softmax", padding="same"))
-
-autoencoder.compile(optimizer=Adam(lr=0.000006),
-                    loss=binary_crossentropy,
-                    metrics=[binary_crossentropy, mean_squared_error])
+autoencoder.compile(optimizer=Adam(lr=0.0001),
+                    loss=mean_squared_error,
+                    metrics=[mean_squared_error])
 
 epoch_n = config["inception-top"]["epoch_n"]
 batch_size = config["inception-top"]["batch_size"]
 steps_per_epoch = config["inception-top"]["steps_per_epoch"]
 
-data_generator = train_datagen.flow(x_train, x_train, shuffle=True, batch_size=batch_size, steps_per_epoch=100)
+# data_generator = train_datagen.flow(x_train, x_train, shuffle=True, batch_size=batch_size)
 
-autoencoder.fit_generator(data_generator, validation_data=(x_test, x_test))
+# autoencoder.fit_generator(data_generator, steps_per_epoch=steps_per_epoch, epochs=epoch_n,
+#                           validation_data=(x_test, x_test))
 
-# autoencoder.fit(x_train, x_train,
-#                 batch_size=batch_size,
-#                 epochs=epoch_n,
-#                 shuffle=True,
-#                 validation_data=(x_test, x_test))
+autoencoder.fit(x_train, x_train,
+                batch_size=batch_size,
+                epochs=epoch_n,
+                shuffle=True,
+                validation_data=(x_test, x_test))
 
 model_json = autoencoder.to_json()
 with open("%s/%s" % (config["output_dir"], "autoencoder.json"), "w+") as model_file:
