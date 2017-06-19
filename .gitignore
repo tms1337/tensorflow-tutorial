@@ -106,3 +106,6 @@ gen
 .idea/
 intro.py
 mnist-beginner.py
+
+*.h5
+*.json

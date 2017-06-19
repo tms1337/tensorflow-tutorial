@@ -38,17 +38,17 @@ code_length = 128
 
 autoencoder = Sequential()
 
-autoencoder.add(Conv2D(64, (2, 2), activation="relu", padding="same", input_shape=x_train.shape[1:]))
+autoencoder.add(Conv2D(16, (2, 2), activation="relu", padding="same", input_shape=x_train.shape[1:]))
 autoencoder.add(MaxPooling2D((2, 2)))
 
 autoencoder.add(Dropout(0.5))
 
 autoencoder.add(UpSampling2D((2, 2)))
-autoencoder.add(Conv2D(64, (2, 2), activation="relu", padding="same"))
+autoencoder.add(Conv2D(16, (2, 2), activation="relu", padding="same"))
 
 autoencoder.add(Conv2D(3, (32, 32), activation="softmax", padding="same"))
 
-autoencoder.compile(optimizer=Adam(lr=0.0001),
+autoencoder.compile(optimizer=Adam(lr=0.001),
                     loss=mean_squared_error,
                     metrics=[mean_squared_error])
 
