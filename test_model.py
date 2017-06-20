@@ -11,16 +11,13 @@ from PIL import Image
 import os
 import random
 import matplotlib.pyplot as plt
+from keras.models import load_model
 from keras.datasets import cifar100
+from ConvolutionalAutoencoderLayer import ConvolutionalAutoencoderLayer
 
-file_name = "autoencoder"
-
-model_url = "/home/faruk/Desktop/output/%s.json" % file_name
-model_file = open(model_url, "r")
-model_json = model_file.read()
-model_file.close()
-model = model_from_json(model_json)
-model.load_weights("/home/faruk/Desktop/output/%s.h5" % file_name)
+file_name = "conv-autoencoder"
+model = load_model("/home/faruk/Desktop/output/%s.h5" % file_name,
+                   custom_objects={"ConvolutionalAutoencoderLayer": ConvolutionalAutoencoderLayer})
 
 (x_train, _), (x_test, _) = cifar100.load_data(label_mode='fine')
 
@@ -31,8 +28,6 @@ for i in range(0, 100):
     plt.show()
 
     prediction = model.predict(x_train[i:i + 1])
-    print(prediction.shape)
-    print(prediction)
     img = prediction[0]
 
     plt.imshow(img)

@@ -9,13 +9,12 @@ from keras.losses import binary_crossentropy, categorical_crossentropy, mean_squ
 from keras.optimizers import Adam, Adadelta
 import keras.backend as K
 from keras.datasets import cifar100
+from keras.callbacks import ModelCheckpoint
 import sys
 
-# print("Creating data")
-# width = 256
-# height = 256
+import signal
+import time
 
-# batch_size = 1
 train_datagen = ImageDataGenerator(rescale=1.0 / 255,
                                    # width_shift_range=0.2,
                                    # height_shift_range=0.2,
@@ -38,19 +37,17 @@ code_length = 128
 
 autoencoder = Sequential()
 
-autoencoder.add(Conv2D(16, (2, 2), activation="relu", padding="same", input_shape=x_train.shape[1:]))
-autoencoder.add(MaxPooling2D((2, 2)))
+autoencoder.add(Conv2D(8, (4, 4), activation="relu", padding="same", input_shape=x_train.shape[1:]))
 
 autoencoder.add(Dropout(0.5))
 
-autoencoder.add(UpSampling2D((2, 2)))
-autoencoder.add(Conv2D(16, (2, 2), activation="relu", padding="same"))
+autoencoder.add(Conv2D(8, (4, 4), activation="relu", padding="same"))
 
 autoencoder.add(Conv2D(3, (32, 32), activation="softmax", padding="same"))
 
-autoencoder.compile(optimizer=Adam(lr=0.001),
-                    loss=mean_squared_error,
-                    metrics=[mean_squared_error])
+autoencoder.compile(optimizer=Adam(lr=0.000003),
+                    loss=binary_crossentropy,
+                    metrics=[binary_crossentropy, mean_squared_error])
 
 epoch_n = config["inception-top"]["epoch_n"]
 batch_size = config["inception-top"]["batch_size"]
@@ -61,13 +58,24 @@ steps_per_epoch = config["inception-top"]["steps_per_epoch"]
 # autoencoder.fit_generator(data_generator, steps_per_epoch=steps_per_epoch, epochs=epoch_n,
 #                           validation_data=(x_test, x_test))
 
+def save_model():
+    model_json = autoencoder.to_json()
+    with open("%s/%s" % (config["output_dir"], "deep-conv-autoencoder.json"), "w+") as model_file:
+        model_file.write(model_json)
+    autoencoder.save_weights("%s/%s" % (config["output_dir"], "deep-conv-autoencoder.h5"))
+
+signal.signal(signal.SIGINT, save_model)
+
+checkpointer = ModelCheckpoint(filepath="%s/%s" % (config["output_dir"], "conv-autoencoder.h5"),
+                               verbose=1,
+                               period=10,
+                               save_weights_only=False,
+                               save_best_only=False)
+
 autoencoder.fit(x_train, x_train,
                 batch_size=batch_size,
                 epochs=epoch_n,
                 shuffle=True,
-                validation_data=(x_test, x_test))
+                validation_data=(x_test, x_test),
+                callbacks=[checkpointer])
 
-model_json = autoencoder.to_json()
-with open("%s/%s" % (config["output_dir"], "autoencoder.json"), "w+") as model_file:
-    model_file.write(model_json)
-autoencoder.save_weights("%s/%s" % (config["output_dir"], "autoencoder.h5"))
