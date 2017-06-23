@@ -14,10 +14,18 @@ import matplotlib.pyplot as plt
 from keras.models import load_model
 from keras.datasets import cifar100
 from ConvolutionalAutoencoderLayer import ConvolutionalAutoencoderLayer
+from config.config import config
+
+
 
 file_name = "conv-autoencoder"
-model = load_model("/home/faruk/Desktop/output/%s.h5" % file_name,
-                   custom_objects={"ConvolutionalAutoencoderLayer": ConvolutionalAutoencoderLayer})
+
+input_shape = (32, 32, 3)
+
+model = Sequential()
+model.add(ConvolutionalAutoencoderLayer(512, filter_size=(3, 3), input_shape=input_shape))
+
+model.load_weights("/home/faruk/Desktop/output/%s.h5" % file_name)
 
 (x_train, _), (x_test, _) = cifar100.load_data(label_mode='fine')
 

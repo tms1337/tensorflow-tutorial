@@ -43,7 +43,8 @@ class ConvolutionalAutoencoderLayer(Layer):
     def call(self, x):
         h = K.conv2d(x, self.kernel, padding="same", data_format="channels_last")
         h = K.bias_add(h, self.encoder_bias)
-        h = K.relu(h)
+        h = K.tanh(h)
+        h = K.dropout(h, 0.5)
 
         W = self.get_weights()[0]
         transpose_shape = list(range(len(W.shape)))
@@ -52,14 +53,12 @@ class ConvolutionalAutoencoderLayer(Layer):
 
         y = K.conv2d(h, W_transpose, padding="same", data_format="channels_last")
         y = K.bias_add(y, self.decoder_bias)
-        y = K.relu(y)
-
-        print(y.shape)
+        y = K.tanh(y)
 
         return y
 
     def compute_output_shape(self, input_shape):
-        return (None, input_shape)
+        return input_shape
 
     def get_encoder_weights(self):
         return self.get_weights()[0], self.get_weights()[1]

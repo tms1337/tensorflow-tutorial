@@ -1,7 +1,7 @@
 from ConvolutionalAutoencoderLayer import ConvolutionalAutoencoderLayer
 from keras.datasets import cifar100
 from keras.layers import Conv2D, MaxPooling2D
-from keras.losses import mean_squared_error
+from keras.losses import mean_squared_error, binary_crossentropy
 from keras.models import Sequential
 from keras.optimizers import Adam
 from config.config import config
@@ -23,16 +23,16 @@ batch_size = config["conv-autoencoder"]["batch_size"]
 input_shape = (32, 32, 3)
 
 autoencoder = Sequential()
-autoencoder.add(ConvolutionalAutoencoderLayer(64, filter_size=(2, 2), input_shape=input_shape))
+autoencoder.add(ConvolutionalAutoencoderLayer(512, filter_size=(3, 3), input_shape=input_shape))
 
-autoencoder.compile(optimizer=Adam(lr=0.001),
-                    loss=mean_squared_error,
-                    metrics=[mean_squared_error])
+autoencoder.compile(optimizer=Adam(lr=0.0001),
+                    loss=binary_crossentropy,
+                    metrics=[binary_crossentropy])
 
 checkpointer = ModelCheckpoint(filepath="%s/%s" % (config["output_dir"], "conv-autoencoder.h5"),
                                verbose=1,
-                               period=10,
-                               save_weights_only=False,
+                               period=5,
+                               save_weights_only=True,
                                save_best_only=False)
 
 autoencoder.fit(x_train, x_train,
