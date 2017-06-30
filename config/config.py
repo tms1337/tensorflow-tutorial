@@ -23,6 +23,11 @@ if is_local:
             "epoch_n": 1,
             "data_n": 10,
         },
+        "noise-removal": {
+            "input_file": "/home/faruk/workspace/thesis/data/HIGGS.dat",
+            "is_compressed": False,
+            "plot": True
+        },
     }
 else:
     config = {
@@ -48,5 +53,10 @@ else:
             "repeat-n": 1,
             "steps_per_epoch": 250,
             "data_n": None
+        },
+        "noise-removal": {
+            "input_file": "/input/HIGGS.csv.gz",
+            "is_compressed": True,
+            "plot": False
         },
     }
