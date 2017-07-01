@@ -12,6 +12,7 @@ class PlotLosses(keras.callbacks.Callback):
 
     def __init__(self):
         ion()
+        self.i = 0
 
     def on_train_begin(self, logs={}):
         self.i = 0
@@ -34,7 +35,10 @@ class PlotLosses(keras.callbacks.Callback):
         plt.plot(self.x, self.losses, label="loss")
         plt.plot(self.x, self.val_losses, label="val_loss")
         plt.legend()
-        plt.pause(0.0001)
-        plt.draw()
+        if self.i % 5 == 0:
+            plt.pause(0.000001)
+            plt.draw()
+
+        self.i += 1
 
 

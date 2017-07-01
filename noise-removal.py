@@ -8,6 +8,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn import preprocessing
 from sklearn.model_selection import cross_val_score
 
+import keras
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, BatchNormalization
 from keras.optimizers import Adam, Adamax
@@ -19,7 +20,7 @@ from plotloss import PlotLosses
 from config.config import config
 
 file_name = "HIGGS"
-nrows = int(5e5)
+nrows = int(1e3)
 
 print("Loading data with %d rows " % nrows)
 file = config["noise-removal"]["input_file"]
@@ -44,37 +45,7 @@ df_norm = pd.DataFrame(preprocessing.StandardScaler().fit_transform(df.values))
 data_x = df_norm.iloc[:, 1:].as_matrix()
 data_y = df.iloc[:, 0].as_matrix()
 
-targets = data_y.reshape(-1)
-one_hot_targets = np.eye(2)[targets.astype(int)]
-
-batch_size = 500
-
-classifier = Sequential()
-classifier.add(BatchNormalization(batch_input_shape=(None, data_x.shape[1]), batch_size=batch_size))
-classifier.add(Dense(data_x.shape[1]*16, input_shape=data_x.shape[1:], activation="relu"))
-classifier.add(Dense(data_x.shape[1]*16, activation="relu"))
-classifier.add(Dense(one_hot_targets.shape[1], activation="softmax"))
-
-classifier.compile(optimizer=Adamax(),
-                   loss=categorical_crossentropy,
-                   metrics=[categorical_crossentropy])
-
-classifier_cyclic_lr = CyclicLR(base_lr=0.01,
-                                max_lr=0.03,
-                                mode="triangular2")
-
-if config["noise-removal"]["plot"]:
-    callbacks = [classifier_cyclic_lr, PlotLosses()]
-else:
-    callbacks = [classifier_cyclic_lr]
-
-classifier.fit(data_x, one_hot_targets,
-               batch_size=batch_size,
-               epochs=2000,
-               callbacks=callbacks)
-
-
-y_before = data_y
+y_before_noise = data_y
 
 should_permute = True
 if should_permute:
@@ -84,70 +55,75 @@ if should_permute:
     permutation = 1 - data_y[:noise_n]
     data_y = np.concatenate( (permutation, data_y[noise_n:]) )
 
-print(data_x.shape, data_y.shape)
-data = np.column_stack( (data_x, data_y) )
+print("Before: %d of %d" % (np.count_nonzero(data_y == y_before_noise), data_y.shape[0]) )
 
-filter_factor = 0.5
-filter_n = int(data.shape[1] * filter_factor)
-denoiser = Sequential()
-denoiser.add(Dense(8*data.shape[1], input_shape=data.shape[1:], activation="relu"))
-denoiser.add(Dropout(0.5))
-denoiser.add(Dense(filter_n, activation="relu"))
-denoiser.add(Dense(8*data.shape[1], activation="relu"))
-denoiser.add(Dropout(0.5))
-denoiser.add(Dense(data.shape[1], activation="softsign"))
+coding_factor = 0.8
+code_length = int(coding_factor * data_x.shape[1])
 
-denoiser.compile(optimizer=Adamax(),
-                 loss=mean_squared_error,
-                 metrics=[mean_squared_error])
+print(data_x.shape)
 
-cyclic_lr = CyclicLR(base_lr=0.0001, max_lr=0.001)
+autoencoder = Sequential()
+# autoencoder.add(Dense(16*data_x.shape[1], input_shape=data_x.shape[1:], activation="relu"))
+autoencoder.add(Dense(code_length, input_shape=data_x.shape[1:], activation="relu"))
+# autoencoder.add(Dense(16*data_x.shape[1], activation="relu"))
+# autoencoder.add(Dropout(0.5))
+autoencoder.add(Dense(data_x.shape[1], activation="softsign"))
 
-changed_x = np.copy(data[:, :-1])
-changed_y = np.copy(data[:, -1])
-changed_y = 1 - changed_y
-changed_data = np.column_stack( (changed_x, changed_y) )
+def min_square_diff(y_true, y_pred):
+    return np.min(np.square(y_true - y_pred))
 
-denoiser.compile(optimizer=Adam(),
-                 loss=mean_squared_error,
-                 metrics=[mean_squared_error])
+autoencoder.compile(optimizer=Adamax(),
+                    loss=min_square_diff,
+                    metrics=[min_square_diff])
+
+autoencoder_cyc = CyclicLR(base_lr=0.001,
+                                max_lr=0.003,
+                                mode="triangular2")
 
 if config["noise-removal"]["plot"]:
-    callbacks = [cyclic_lr, PlotLosses()]
+    callbacks = [autoencoder_cyc]
 else:
-    callbacks = [cyclic_lr]
+    callbacks = [autoencoder_cyc]
 
-denoiser.fit(changed_data, data,
-             batch_size=500,
-             epochs=1000,
-             verbose=1,
-             callbacks=callbacks)
+autoencoder.fit(data_x, data_x,
+                batch_size=250,
+                epochs=1250,
+                callbacks=callbacks)
 
-knn = KNeighborsClassifier(n_neighbors=1, n_jobs=-1)
-score = cross_val_score(knn,
-                        data_x,
-                        data_y,
-                        cv=10,
-                        n_jobs=-1,
-                        verbose=0)
-avg_score = np.average(np.array(score))
-print("Before %f" % avg_score)
+encoder = Sequential()
+# encoder.add(Dense(16*data_x.shape[1], input_shape=data_x.shape[1:], activation="relu", weights=autoencoder.layers[0].get_weights()))
+encoder.add(Dense(code_length, input_shape=data_x.shape[1:], activation="relu", weights=autoencoder.layers[0].get_weights()))
 
-data = denoiser.predict(data)
+encoded_x = encoder.predict(data_x)
 
-print( "Count before: ", np.count_nonzero(data_y == y_before) )
+targets = data_y.reshape(-1)
+one_hot_targets = np.eye(2)[targets.astype(int)]
 
-# data_x = data[:,:-1]
-data_y = np.round( data[:,-1] )
+batch_size = 250
 
-print("Size: ", data_y.shape[0])
-print( "Count after: ", np.count_nonzero(data_y == y_before) )
+classifier = Sequential()
+# classifier.add(BatchNormalization(batch_input_shape=(None, encoded_x.shape[1]), batch_size=batch_size))
+classifier.add(Dense(encoded_x.shape[1]*16, input_shape=encoded_x.shape[1:], activation="relu"))
+classifier.add(Dense(one_hot_targets.shape[1], activation="softmax"))
 
-score = cross_val_score(knn,
-                        data_x,
-                        data_y,
-                        cv=10,
-                        n_jobs=-1,
-                        verbose=0)
-avg_score = np.average(np.array(score))
-print("After %f" % avg_score)
+classifier.compile(optimizer=Adamax(),
+                   loss=categorical_crossentropy,
+                   metrics=[categorical_crossentropy])
+
+classifier_cyclic_lr = CyclicLR(base_lr=0.001,
+                                max_lr=0.003,
+                                mode="triangular2")
+
+if config["noise-removal"]["plot"]:
+    callbacks = [classifier_cyclic_lr, PlotLosses()]
+else:
+    callbacks = [classifier_cyclic_lr]
+
+classifier.fit(encoded_x, one_hot_targets,
+               batch_size=batch_size,
+               epochs=700,
+               callbacks=callbacks)
+
+predictions = np.argmax(np.round(classifier.predict(encoded_x)), axis=1)
+
+print("After: %d of %d" % (np.count_nonzero(predictions == y_before_noise), data_y.shape[0]) )
